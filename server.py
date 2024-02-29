@@ -1,64 +1,87 @@
-import socket, threading, asyncio, os
+import socket
+import threading
+import asyncio
+import os
+from time import sleep
 
-host = "127.0.0.1"
-port = 8080
 
-sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-sock.bind((host, port))
-sock.listen()
+HOST = "127.0.0.1"
+PORT = 60688
 
 clients = []
 usernames = []
-usersConnected = True
+users_connected = True
 
-if not usersConnected:
-    print("servidor cerrado")
-    os._exit(0)
-
-
-def broadcast(message, _client):
-    for client in clients:
-        if client != _client:
-            client.send(message)
-
-
-def handling_messages(client):
-    while True:
-        try:
-            message = client.recv(1024)
-            broadcast(message, client)
-        except:
-            index = clients.index(client)
-            userName = usernames[index]
-            broadcast(f"{userName} Salio del chat".encode("utf-8"), client)
-            clients.remove(client)
-            usernames.remove(userName)
-
-            client.close()
-            if index == 0:
-                print("Servidor cerrado")
-                global usersConnected
-                usersConnected = False
+async def handle_client(client, address):
+    try:
+        client.send("Usuario".encode("utf-8"))
+        while True:
+            try:
+                username = client.recv(1024).decode("utf-8")
+            except BlockingIOError:
+                await asyncio.sleep(0.01)  # wait for 10ms before trying again
+                continue
             break
 
+        with threading.Lock():
+            clients.append(client)
+            usernames.append(username)
 
-async def receive_connections():
-    while True:
-        client, address = await asyncio.to_thread(sock.accept)
+        print(f'Usuario: {username} conectado desde {str(address)}')
 
-        client.send("Usuario".encode("utf-8"))
-        userName = (await asyncio.to_thread(client.recv, 1024)).decode("utf-8")
-
-        clients.append(client)
-        usernames.append(userName)
-
-        print(f'Usuario: {userName} conectado con {str(address)}')
-
-        message = f"{userName} Ingresaste al chat".encode("utf-8")
+        message = f"{username} se ha unido al chat".encode("utf-8")
         broadcast(message, client)
-        client.send(" Conectado al servidor".encode("utf-8"))
 
-        thread = threading.Thread(target=handling_messages, args=(client,))
-        thread.start()
+        while True:
+            try:
+                message = client.recv(1024)
+            except BlockingIOError:
+                await asyncio.sleep(0.01)  # wait for 10ms before trying again
+                continue
+            if not message:
+                break
+            broadcast(message, client)
 
-asyncio.run(receive_connections())
+    except Exception as e:
+        print(f"Error en la conexión con {address}: {e}")
+
+    finally:
+        with threading.Lock():
+            if client in clients:
+                index = clients.index(client)
+                username = usernames[index]
+                broadcast(f"{username} ha salido del chat".encode("utf-8"), client)
+                clients.remove(client)
+                usernames.remove(username)
+                client.close()
+
+def broadcast(message, sender):
+    with threading.Lock():
+        for client in clients:
+            if client != sender:
+                try:
+                    client.send(message)
+                except Exception as e:
+                    print(f"Error al enviar mensaje: {e}")
+
+async def start_server():
+    server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server.bind((HOST, PORT))
+    server.listen()
+    server.setblocking(False)
+
+    loop = asyncio.get_event_loop_policy().get_event_loop()
+
+    while users_connected:
+        try:
+            client, address = await loop.run_in_executor(None, server.accept)
+        except BlockingIOError:
+            continue
+        print(f"Conexión establecida con {str(address)}")
+        task = asyncio.create_task(handle_client(client, address))
+
+async def main():
+    await start_server()
+
+if __name__ == "__main__":
+    asyncio.run(main())

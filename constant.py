@@ -1,7 +1,5 @@
 import os, subprocess
 
-def clear_screen():
-    os.system("cls")
 
 def run_server():
     os.chdir(r".")

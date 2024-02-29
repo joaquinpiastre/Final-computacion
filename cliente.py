@@ -1,11 +1,11 @@
 import socket, threading
 from main import main
 from constant import *
-from autocorrector import *
+from auto_corrector import *
 
 def start_client(username):
     host = "127.0.0.1"
-    port = 8080
+    port = 60688
 
     client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
