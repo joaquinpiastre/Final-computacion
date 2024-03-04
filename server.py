@@ -8,9 +8,11 @@ from time import sleep
 HOST = "127.0.0.1"
 PORT = 60688
 
+
 clients = []
 usernames = []
 users_connected = True
+
 
 async def handle_client(client, address):
     try:
@@ -55,6 +57,7 @@ async def handle_client(client, address):
                 usernames.remove(username)
                 client.close()
 
+
 def broadcast(message, sender):
     with threading.Lock():
         for client in clients:
@@ -63,6 +66,7 @@ def broadcast(message, sender):
                     client.send(message)
                 except Exception as e:
                     print(f"Error al enviar mensaje: {e}")
+
 
 async def start_server():
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -80,8 +84,10 @@ async def start_server():
         print(f"Conexión establecida con {str(address)}")
         task = asyncio.create_task(handle_client(client, address))
 
+
 async def main():
     await start_server()
+
 
 if __name__ == "__main__":
     asyncio.run(main())

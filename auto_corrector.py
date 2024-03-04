@@ -8,4 +8,5 @@ def correct_word(word):
         return corrector(word)
     else:
         return word
-    print(correct_word("lo boy a intentar"))
+    
+    #print("lo boy a intentar")

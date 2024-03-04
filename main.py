@@ -2,6 +2,7 @@ from server import *
 from cliente import *
 from constant import *
 
+
 def user_name():
     while True:
         user_name = input("Por favor, ingresa tu nombre de usuario: ")
@@ -9,6 +10,8 @@ def user_name():
             return user_name
         else:
             print("El nombre de usuario no puede estar vacío. Por favor, intenta de nuevo.")
+
+
 def main():
     while True:
         print("=================================")
@@ -36,8 +39,12 @@ def main():
             break
         else:
             print("Opción no válida. Por favor, intenta de nuevo.")
+
+
 def exit_program():
     print("Saliendo...")
     exit(0)
+
+
 if __name__ == "__main__":
     main()
